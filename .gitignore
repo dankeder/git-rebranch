@@ -1,0 +1,5 @@
+*.swp
+*.swo
+git_rebranch.egg-info
+dist
+build
