@@ -60,6 +60,14 @@ it to rebase any branches you already published. That would break other people's
 history. But you certainly already know that :).
 
 
+Installation
+------------
+
+Use python distutils to install the script:
+
+    $ python setup.py install
+
+
 Format of the `.gitrebranch` file
 ---------------------------------
 
