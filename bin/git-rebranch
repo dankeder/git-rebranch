@@ -108,7 +108,7 @@ class Git(object):
     def _info(self, msg, *args):
         if self.verbose:
             msg = msg.format(*args)
-            sys.stdout.write(cmap.colorize(">>>: {0}\n".format(msg), 0x00ff00))
+            sys.stdout.write(cmap.colorize(">>> {0}\n".format(msg), 0x00ff00))
 
 
 class Config(object):
