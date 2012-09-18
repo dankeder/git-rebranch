@@ -64,7 +64,8 @@ class Git(object):
                         upstream, branch)
         else:
             if not self.dry_run:
-                process = self._git('rebase', '--merge', '--strategy-option=ours',
+                #process = self._git('rebase', '--merge', '--strategy-option=ours',
+                process = self._git('rebase', '--merge',
                         '--onto', newbase, upstream, branch)
         if process.returncode != 0:
             raise Exception("Rebasing failed")
