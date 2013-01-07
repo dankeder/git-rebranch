@@ -143,20 +143,20 @@ class Config(object):
     def _parse_tree(self, fd):
         stack = [Config.Node('_root_')]
         last = stack[0]
-        for (tabs, branch, flags) in self._parse_lines(fd):
+        for (indent, branch, flags) in self._parse_lines(fd):
             node = Config.Node(branch, flags)
 
-            if tabs == len(stack) - 1:    # same level
+            if indent == len(stack) - 1:    # same level
                 stack[-1].add_tree(node)
                 last = node
 
-            elif tabs == len(stack):      # +1 level
+            elif indent == len(stack):      # +1 level
                 last.add_tree(node)
                 stack.append(last)
                 last = node
 
-            elif tabs < len(stack) - 1:   # -n level
-                stack = stack[:tabs+1]
+            elif indent < len(stack) - 1:   # -n level
+                stack = stack[:indent+1]
                 stack[-1].add_tree(node)
                 last = node
 
@@ -167,24 +167,37 @@ class Config(object):
         return stack[0]
 
     def _parse_lines(self, fd):
+        indentwidth = None;
         for line in fd.readlines():
             line = line.rstrip()
             if line == '':
                 next
 
-            match = re.match("(\t*)(.+)( \[(.*)\])?\s*", line)
+            match = re.match("([\t ]*)(.+)( \[(.*)\])?\s*", line)
             if match is None:
                 raise Exception("Malformed config file format")
-            tabs = len(match.group(1))
+            indent = len(match.group(1))
             branch = match.group(2)
             flags = match.group(4)
+
+            # We guess the indent width from the first indented line found. The
+            # indent of all the following lines must be multiple of the guessed
+            # indent width.
+            if indent > 0:
+                if indentwidth is None:
+                    indentwidth = indent
+                if indent % indentwidth != 0:
+                    raise Exception("Malformed config file: indent")
+                indent /= indentwidth
+
+            branch = branch.strip()
 
             if flags is not None:
                 flags = flags.split(',')
             else:
                 flags = []
 
-            yield (tabs, branch, flags)
+            yield (indent, branch, flags)
 
     def __str__(self):
         s = ""
