@@ -1,9 +1,9 @@
 git-rebranch
 ============
 
-The `git-rebranch` script is a git extension script for automating branch
-rebasing. You describe the desired branch layout in a configuration file and
-`git-rebranch` will take care of all the hard work when you run it.
+The `git-rebranch` script is a git extension script for easier branch rebasing.
+Define the branch layout in the `.gitrebranch` file and run `git rebranch` to
+rebase the branches automatically.
 
 
 Description
