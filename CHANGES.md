@@ -1,3 +1,3 @@
 
-0.1
-  * Everything :)
+0.1.0
+  - Everything :)
