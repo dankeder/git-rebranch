@@ -272,6 +272,10 @@ def do_rebranch_continue(args):
         error(e)
         sys.exit(1)
 
+    # Checkout the original branch
+    git.checkout(curbranch)
+
+
 
 def do_rebranch_abort(args):
     git = Git()
@@ -295,11 +299,14 @@ def do_rebranch_abort(args):
         sys.exit(1)
 
     # Reset rebased branches to their original revisions
-    (_, orig_branches, _) = state.load()
+    (curbranch, orig_branches, _) = state.load()
     for (branch, sha1) in orig_branches.items():
         info("Resetting {0} to {1}", branch, sha1)
         git.checkout(branch)
         git.reset_hard(sha1)
+
+    # Checkout the original branch
+    git.checkout(curbranch)
 
     state.clear()
 
