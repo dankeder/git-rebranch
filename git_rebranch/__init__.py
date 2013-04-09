@@ -143,6 +143,21 @@ class RebranchConfig(object):
                 stack = [tree] + stack
         return plan
 
+    @property
+    def branches(self):
+        """ Return list of all branches mentioned in the config file.
+
+        :return: List of branch names
+        """
+        result = []
+        stack = [self.root]
+        while stack:
+            parent = stack.pop()
+            for tree in parent.subtrees:
+                result.append(tree.val)
+                stack = [tree] + stack
+        return result
+
 
 class RebranchState(object):
     def __init__(self, gitroot):
@@ -212,13 +227,15 @@ def do_rebranch(args):
     # Read .gitrebranch
     config = RebranchConfig(git)
 
-    # TODO: Check that all the required branches exist
-
     # Remember the current branch
     curbranch = git.current_branch
 
-    # Do rebranch
     try:
+        # Check that all the required branches exist
+        for branch in config.branches:
+            git.get_sha1(branch)
+
+        # Do rebranch
         _rebranch(git, curbranch, {}, config.rebase_plan(), args.dry_run)
     except GitError as e:
         error(e)
