@@ -1,6 +1,8 @@
 TODO
 ====
 
+- prior to creating a statefile, it should check that all the required branches exist
+
 - create a man page
 
 Use class-based exceptions.
