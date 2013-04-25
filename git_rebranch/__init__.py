@@ -117,7 +117,21 @@ class RebranchConfig(object):
         return self.root.to_str(0)
 
 
+    def rebase_plan(self):
+        """ Create a rebasing plan.
 
+        :return: List of rebasing instructions
+        """
+        plan = []
+        stack = [self.root]
+        while stack:
+            parent = stack.pop()
+            for tree in parent.subtrees:
+                parentbranch = parent.val
+                childbranch = tree.val
+                plan.append((parentbranch, childbranch))
+                stack = [tree] + stack
+        return plan
 
 
 if __name__ == '__main__':
