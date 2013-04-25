@@ -19,7 +19,7 @@ def error(msg):
     sys.stderr.write(cmap.colorize("{0}\n".format(msg), 0xff0000))
 
 
-def parse_cmdline():
+def parse_args():
     parser = argparse.ArgumentParser("git-rebranch")
     parser.add_argument('--dry-run', action='store_true',
             help='dry-run operation')
@@ -219,37 +219,14 @@ def do_rebranch(args):
     git.checkout(curbranch)
 
 
+def main():
+    args = parse_args()
+    do_rebranch(args)
+
+
+
+
 if __name__ == '__main__':
-    args = parse_cmdline()
-    cmap = XTermColorMap()
-    git = Git(args.verbose, args.dry_run)
-
-    # Get config file path
-    try:
-        config_file = os.path.join(git.root(), ".gitrebranch")
-        fh = open(config_file, 'r')
-        config = Config(fh)
-    except IOError:
-        error("Failed opening file {0}".format(config_file))
-        sys.exit(1)
-
-    if (args.dry_run):
-        sys.stdout.write(str(config))
-        sys.exit(0)
-    else:
-        try:
-            # Remember the current branch
-            current_branch = git.current_branch()
-
-            # Rebranch
-            for tree in config.trees():
-                git.rebranch(tree)
-
-            # Checkout the original branch
-            git.checkout(current_branch)
-        except Exception, e:
-            error(e)
-            sys.exit(1)
-
+    main()
 
 # vim: expandtab
