@@ -1,6 +1,7 @@
 import os
 from subprocess import Popen, PIPE
 
+
 class GitError(Exception):
     def __init__(self, msg, stderr=None):
         self.msg = msg
@@ -9,10 +10,10 @@ class GitError(Exception):
     def __str__(self):
         return self.msg
 
+
 class Git(object):
     """ This class allows running git commands.
     """
-
     def __init__(self):
         pass
 
@@ -32,7 +33,7 @@ class Git(object):
     def current_branch(self):
         """ Get the current branch name. If the repo is in detached state return
         None.
-        
+
         :return: Current branch name or None.
         """
         process = self._run('branch')
@@ -140,3 +141,6 @@ class Git(object):
         process = Popen(cmd, stdout=PIPE, stderr=PIPE)
         process.wait()
         return process
+
+
+# vim: expandtab sw=4

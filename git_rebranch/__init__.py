@@ -138,7 +138,6 @@ def do_rebranch_continue(args):
     git.checkout(curbranch)
 
 
-
 def do_rebranch_abort(args):
     git = Git()
     state = RebranchState(git.rootdir)
@@ -187,9 +186,7 @@ def main():
         do_rebranch(args)
 
 
-
-
 if __name__ == '__main__':
     main()
 
-# vim: expandtab
+# vim: expandtab sw=4
