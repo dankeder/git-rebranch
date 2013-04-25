@@ -6,6 +6,18 @@ from xtermcolor.ColorMap import XTermColorMap
 
 from git_rebranch.git import Git, GitError
 
+cmap = XTermColorMap()
+
+
+def info(msg, *args):
+    msg = msg.format(*args)
+    sys.stdout.write(cmap.colorize("{0}\n".format(msg), 0x00ff00))
+
+
+def error(msg):
+    sys.stderr.write(cmap.colorize("{0}\n".format(msg), 0xff0000))
+
+
 def parse_cmdline():
     parser = argparse.ArgumentParser("git-rebranch")
     parser.add_argument('--dry-run', action='store_true',
@@ -112,8 +124,6 @@ class Config(object):
             s += tree.to_str(1)
         return s
 
-def error(msg):
-    sys.stderr.write(cmap.colorize("Error: {0}\n".format(msg), 0xff0000))
 
 if __name__ == '__main__':
     args = parse_cmdline()
