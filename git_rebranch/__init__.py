@@ -21,6 +21,15 @@ def error(msg):
 
 def parse_args():
     parser = argparse.ArgumentParser("git-rebranch")
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--continue', action='store_true',
+            help='continue interrupted rebranch',
+            required=False, dest='cont')
+    group.add_argument('--abort', action='store_true',
+            help='abort interrupted rebranch',
+            required=False)
+
     parser.add_argument('--dry-run', action='store_true',
             help='dry-run operation')
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -219,9 +228,77 @@ def do_rebranch(args):
     git.checkout(curbranch)
 
 
+def do_rebranch_continue(args):
+    git = Git()
+    state = RebranchState(git.rootdir)
+
+    if not state.in_progress():
+        error("There is no rebranch in progress")
+        sys.exit(1)
+
+    # Continue the interrupted rebase
+    if git.rebase_in_progress():
+        info("Continue rebasing")
+        (rc, stdout, stderr) = git.rebase_continue()
+        sys.stdout.write(stdout)
+        sys.stderr.write(stderr)
+        if rc != 0:
+            error('Resolve the conflicts and run "git rebranch --continue"')
+            error('To stop, run "git rebranch --abort"')
+            sys.exit(1)
+
+    # Continue rebasing
+    try:
+        (curbranch, orig_branches, plan) = state.load()
+        _rebranch(git, curbranch, orig_branches, plan, args.dry_run)
+    except GitError as e:
+        error(e)
+        sys.exit(1)
+
+
+def do_rebranch_abort(args):
+    git = Git()
+    state = RebranchState(git.rootdir)
+
+    if not state.in_progress():
+        error("There is no rebranch in progress")
+        sys.exit(1)
+
+    # Abort an eventual rebase
+    if git.rebase_in_progress():
+        (rc, stdout, stderr) = git.rebase_abort()
+        sys.stdout.write(stdout)
+        sys.stderr.write(stderr)
+        if rc != 0:
+            error("Failed rebase --abort")
+
+    # Just to be sure; check if the repo is clean
+    if git.isdirty:
+        error("Working copy is not clean")
+        sys.exit(1)
+
+    # Reset rebased branches to their original revisions
+    (_, orig_branches, _) = state.load()
+    for (branch, sha1) in orig_branches.items():
+        info("Resetting {0} to {1}", branch, sha1)
+        git.checkout(branch)
+        git.reset_hard(sha1)
+
+    state.clear()
+
+
 def main():
     args = parse_args()
-    do_rebranch(args)
+
+    if args.cont:
+        # Continue an interrupted rebranch
+        do_rebranch_continue(args)
+    elif args.abort:
+        # Abort an interrupted rebranch
+        do_rebranch_abort(args)
+    else:
+        # Normal operation
+        do_rebranch(args)
 
 
 
