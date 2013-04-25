@@ -4,9 +4,9 @@ import re
 import os.path
 import sys
 import argparse
-from subprocess import Popen, PIPE
 from xtermcolor.ColorMap import XTermColorMap
 
+from git_rebranch.git import Git, GitError
 
 def parse_cmdline():
     parser = argparse.ArgumentParser("git-rebranch")
@@ -19,97 +19,6 @@ def parse_cmdline():
 
     return args
 
-
-class Git(object):
-    def __init__(self, verbose, dry_run):
-        self.verbose = verbose
-        self.dry_run = dry_run
-
-    def root(self):
-        """ Return the root directory of the git repository.
-        """
-        process = self._git('rev-parse', '--show-toplevel')
-        if process.returncode != 0:
-            raise Exception("Failed getting git root directory")
-        git_root = process.stdout.readline().strip()
-        return git_root;
-
-    def current_branch(self):
-        process = self._git('branch')
-        if process.returncode != 0:
-            raise Exception("Failed getting current branch")
-        for line in process.stdout.readlines():
-            line = line.strip()
-            if line.startswith('*'):
-                return line[2:]
-
-    def checkout(self, branch):
-        process = self._git('checkout', branch)
-        if process.returncode != 0:
-            raise Exception("Checkout of branch {0} failed".format(branch))
-
-    def rev_parse(self, branch):
-        process = self._git('rev-parse', '--short', branch)
-        if process.returncode != 0:
-            raise Exception("Failed getting SHA1 hash of {0}".format(branch))
-        sha1 = process.stdout.readline().strip()
-        return sha1
-
-    def rebase(self, newbase, upstream, branch, flags):
-        old_branch_sha1 = self.rev_parse(branch)
-
-        if 'not_ours' in flags:
-            if not self.dry_run:
-                process = self._git('rebase', '--merge', '--onto', newbase,
-                        upstream, branch)
-        else:
-            if not self.dry_run:
-                #process = self._git('rebase', '--merge', '--strategy-option=ours',
-                process = self._git('rebase', '--merge',
-                        '--onto', newbase, upstream, branch)
-        if process.returncode != 0:
-            raise Exception("Rebasing failed")
-
-        branch_sha1 = self.rev_parse(branch)
-
-        if old_branch_sha1 == branch_sha1:
-            self._info("Rebased {0} (no change)", branch, old_branch_sha1,
-                    branch_sha1)
-        else:
-            self._info("Rebased {0} ({1} -> {2})", branch, old_branch_sha1,
-                    branch_sha1)
-
-    def rebranch(self, node, orig_branch=None):
-        if orig_branch is None:
-            orig_branch = node.branch;
-
-        for subtree in node.subtrees:
-            # We have to store the SHA1 of the subbranch before rebasing if we
-            # want to properly rebase its sub-branches.
-            subbranch_sha1 = self.rev_parse(subtree.branch);
-
-            # Rebase commits from the range 'orig_branch..subtree_branch' onto
-            # 'node_branch'
-            self.rebase(node.branch, orig_branch, subtree.branch, node.flags)
-
-            if subtree.subtrees:
-                self.rebranch(subtree, subbranch_sha1)
-
-    def _git(self, *args):
-        """ Run the 'git' command with the specified arguments and return the
-            process object.
-        """
-        cmd = ['git'] + list(args)
-        process = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
-        process.wait()
-        if self.verbose:
-            sys.stdout.write(process.stderr.read())
-        return process
-
-    def _info(self, msg, *args):
-        if self.verbose:
-            msg = msg.format(*args)
-            sys.stdout.write(cmap.colorize(">>> {0}\n".format(msg), 0x00ff00))
 
 
 class Config(object):
