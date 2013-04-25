@@ -46,7 +46,7 @@ setup(name='git-rebranch',
         zip_safe=False,
         install_requires=requires,
         entry_points={
-                'console_scripts': [ 'git-rebranch = git_rebranch:main' ]
+                'console_scripts': [ 'git-rebranch = gitrebranch:main' ]
             }
     )
 

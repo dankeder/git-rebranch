@@ -2,9 +2,9 @@ import sys
 import argparse
 from xtermcolor.ColorMap import XTermColorMap
 
-from git_rebranch.git import Git, GitError
-from git_rebranch.config import RebranchConfig, RebranchConfigError
-from git_rebranch.state import RebranchState
+from gitrebranch.git import Git, GitError
+from gitrebranch.config import RebranchConfig, RebranchConfigError
+from gitrebranch.state import RebranchState
 
 
 cmap = XTermColorMap()

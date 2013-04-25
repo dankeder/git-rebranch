@@ -1,6 +1,6 @@
 *.swp
 *.swp
 *.pyc
-git_rebranch.egg-info
+gitrebranch.egg-info
 dist
 build
