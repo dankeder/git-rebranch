@@ -186,6 +186,39 @@ def _rebranch(git, curbranch, orig_branches, plan, dry_run):
     state.clear()
 
 
+def do_rebranch(args):
+    git = Git()
+    state = RebranchState(git.rootdir)
+
+    # Check if we were interrupted
+    if state.in_progress():
+        error("Rebranch is in progress. Use --continue or --abort")
+        sys.exit(1)
+
+    # Check if the repo is clean
+    if git.isdirty:
+        error("Working copy is not clean, aborting.")
+        sys.exit(1)
+
+    # Read .gitrebranch
+    config = RebranchConfig(git)
+
+    # TODO: Check that all the required branches exist
+
+    # Remember the current branch
+    curbranch = git.current_branch
+
+    # Do rebranch
+    try:
+        _rebranch(git, curbranch, {}, config.rebase_plan(), args.dry_run)
+    except GitError as e:
+        error(e)
+        sys.exit(1)
+
+    # Checkout the original branch
+    git.checkout(curbranch)
+
+
 if __name__ == '__main__':
     args = parse_cmdline()
     cmap = XTermColorMap()
