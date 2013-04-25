@@ -154,6 +154,38 @@ class RebranchState(object):
         return os.path.exists(self._statefile)
 
 
+def _rebranch(git, curbranch, orig_branches, plan, dry_run):
+    state = RebranchState(git.rootdir)
+    while plan:
+        (parentbranch, childbranch) = plan[0]
+        plan = plan[1:]
+        orig_branches[childbranch] = git.get_sha1(childbranch)
+
+        state.store(curbranch, orig_branches, plan)
+
+        if parentbranch is not None:
+            info("Rebasing {0} onto {1}", childbranch, parentbranch)
+
+            # Check if we are in the middle of a rebase?
+            if git.rebase_in_progress():
+                error("Rebase in progress")
+                sys.exit(1)
+
+            # Rebase commit range 'orig_branches[parentbranch]..childbranch' onto
+            # the (new) parentbranch
+            if not dry_run:
+                (rc, stdout, stderr) = git.rebase(parentbranch, orig_branches[parentbranch], childbranch)
+                sys.stdout.write(stdout)
+                sys.stderr.write(stderr)
+                if rc != 0:
+                    error('Rebranching failed.')
+                    error('To continue, resolve conflicts and run "git rebranch --continue"')
+                    error('To stop rebasing and return everything as it were, run "git rebranch --abort"')
+                    sys.exit(1)
+
+    state.clear()
+
+
 if __name__ == '__main__':
     args = parse_cmdline()
     cmap = XTermColorMap()
