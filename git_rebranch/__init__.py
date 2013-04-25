@@ -30,99 +30,94 @@ def parse_cmdline():
     return args
 
 
+class RebranchConfigError(Exception):
+    def __init__(self, msg, line=None):
+        self.msg = msg
+        self.line = line
 
-class Config(object):
-    class Node(object):
-        def __init__(self, branch, flags=[]):
-            self.branch = branch
-            self.flags = flags
+
+class RebranchConfig(object):
+    class _Tree(object):
+        def __init__(self, val):
+            self.val = val
             self.subtrees = []
 
         def to_str(self, level):
-            if len(self.flags):
-                s = "{0}  [%s]\n".format(self.branch, " ".join(self.flags))
-            else:
-                s = "{0}\n".format(self.branch)
-            if len(self.subtrees):
-                for node in self.subtrees:
-                    s += (" " * 4 * level) + node.to_str(level+1)
+            s = ''
+            if self.val is not None:
+                s = "{0}\n".format(self.val)
+            for node in self.subtrees:
+                s += (" " * 4 * level) + node.to_str(level+1)
             return s
 
-        def add_tree(self, tree):
+        def add_subtree(self, tree):
             self.subtrees.append(tree)
 
+    def __init__(self, git):
+        configfile = os.path.join(git.rootdir, ".gitrebranch")
+        with open(configfile, 'r') as fh:
+            self.read(fh)
 
-    def __init__(self, fd):
-        root = Config.Node('_root')
-        self.tree = self._parse_tree(fd)
+    def read(self, fileobj):
+        self._fileobj = fileobj
 
-    def trees(self):
-        return self.tree.subtrees
-
-    def _parse_tree(self, fd):
-        stack = [Config.Node('_root_')]
+        stack = [RebranchConfig._Tree(None)]
         last = stack[0]
-        for (indent, branch, flags) in self._parse_lines(fd):
-            node = Config.Node(branch, flags)
+        for (lineno, level, branchname) in self._parselines():
+            tree = RebranchConfig._Tree(branchname)
 
-            if indent == len(stack) - 1:    # same level
-                stack[-1].add_tree(node)
-                last = node
+            if level == len(stack) - 1:    # on the same level
+                stack[-1].add_subtree(tree)
+                last = tree
 
-            elif indent == len(stack):      # +1 level
-                last.add_tree(node)
+            elif level == len(stack):      # on the +1 level
+                last.add_subtree(tree)
                 stack.append(last)
-                last = node
+                last = tree
 
-            elif indent < len(stack) - 1:   # -n level
-                stack = stack[:indent+1]
-                stack[-1].add_tree(node)
-                last = node
+            elif level < len(stack) - 1:   # on the -n level
+                stack = stack[:level+1]
+                stack[-1].add_subtree(tree)
+                last = tree
 
             else:
-                # Bad indentation
-                raise Exception("Bad indentation")
+                raise RebranchConfigError("Bad indentation", lineno)
 
-        return stack[0]
+        self.root = stack[0]
 
-    def _parse_lines(self, fd):
+    def _parselines(self):
         indentwidth = None;
-        for line in fd.readlines():
+        lineno = 0
+        for line in self._fileobj.readlines():
+            lineno += 1
             line = line.rstrip()
-            if line == '':
-                next
+            if line == '': next
 
-            match = re.match("([\t ]*)(.+)( \[(.*)\])?\s*", line)
+            match = re.match("([\t ]*)(.+)", line)
             if match is None:
-                raise Exception("Malformed config file format")
+                raise RebranchConfigError("Malformed config file format",
+                        lineno)
             indent = len(match.group(1))
-            branch = match.group(2)
-            flags = match.group(4)
+            branchname = match.group(2)
 
             # We guess the indent width from the first indented line found. The
-            # indent of all the following lines must be multiple of the guessed
-            # indent width.
-            if indent > 0:
+            # indent width of all the following lines must be multiple of it.
+            if indent:
                 if indentwidth is None:
                     indentwidth = indent
                 if indent % indentwidth != 0:
-                    raise Exception("Malformed config file: indent")
-                indent /= indentwidth
-
-            branch = branch.strip()
-
-            if flags is not None:
-                flags = flags.split(',')
+                    raise RebranchConfigError("Wrong indentation",
+                            lineno)
+                level = indent / indentwidth
             else:
-                flags = []
+                level = 0
+            yield (lineno, level, branchname)
 
-            yield (indent, branch, flags)
+    def to_str(self):
+        return self.root.to_str(0)
 
-    def __str__(self):
-        s = ""
-        for tree in self.tree.subtrees:
-            s += tree.to_str(1)
-        return s
+
+
 
 
 if __name__ == '__main__':
