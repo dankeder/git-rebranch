@@ -106,7 +106,7 @@ branches will be reset to their original SHA1-s.
 Licence
 -------
 
-See the file LICENCE.
+GPLv2
 
 Author
 ------
